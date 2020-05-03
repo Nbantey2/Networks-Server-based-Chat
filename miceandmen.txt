@@ -1,0 +1,50 @@
+Grading:
+25% - "Connection phase" (encryption stuff and handshaking)
+35% - "Chat phase" (starting chats between users, chatting and 
+		    ending chats. Also maybe message logging?)
+group report - 40%
+
+Need to implement client ids
+	On first run (that is, if there isn't a user id file present):
+		client gets username from user and tries to connect with that username
+		if successful the server will send back a user id
+		the client saves the id in a file
+		the server tells the client it's logged in
+	On subsequent runs
+		the client gets its user id from the file and sends it to the server	
+		the server tells the client it's logged in
+
+client talking with at most one other client
+
+sockets are the important bit
+
+Entire encryption flow may be out of scope at this point, but if not:
+	<encryption handshake stuff>
+
+Chat Phase:
+	After connecting a user can say [chat (user)] to start chatting
+	with another user
+	if the target user is offline or involved in another chat this fails
+		server sends a failure response
+		client prints (username) was unavailable or somesuch
+	if the target user is online and not in another chat
+		server acnkowledges that they're both available and sends them a protocol message
+		to say chat started
+		clients print that the chat has started
+
+		from this point, any message the users send OTHER THAN THE OPTION BELOW is interpreted as
+		a message to the other user
+			the client encodes the message and sends it to the server
+			the server receives it, logs it*, and sends it to the other client
+			Repeat this until..
+		If either client sends the message "End Chat"
+			the server receives it and sends and end-of-chat protocol message to both clients
+			the clients receive this and prints it, waits for the client to hit enter, then
+			exits the chat mode
+
+ONCE WE GET THE ABOVE FLOW WORKING PROPERLY:
+	take an hour or so break for food and decompression
+	evaluate if we have enough time to implement chat history OR encryption, I think both is
+	unlikely to be completed.
+
+We also need to keep in mind the group and individual reports

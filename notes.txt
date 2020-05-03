@@ -1,3 +1,5 @@
+How it works right now:
+
 Server
     Socket setup and creation is currently handled
     server listens for messages on socket then receives them as objects:
@@ -21,6 +23,21 @@ Server
                         if the client isn't the sender, send them the message
                         and the sender
 
-Current bugs: This works, but doesn't push to the client. That is, the client 
-has to send a message to get a message from the server. How do we make it
-live update
+Client
+    Create and set up sockets and client id
+    send the client id to the server
+    define function to handle receiving messages
+    start a thread for the receiving function
+    start waiting for user input to send messages to server
+
+Current bugs: Live update works but has some output issues because it can
+interrupt the input line from the main thread
+
+Next steps:
+    Allow users to start chatting with each other
+    This means we need to:
+        implement a way to track user modes
+        implement a message/header(?) to start a chat
+        implement receiving that message
+        implement sending a message to two users to start a chat
+        implement processing received messages based on user status
