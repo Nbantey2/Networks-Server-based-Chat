@@ -72,6 +72,8 @@ def receive_messages():
             # Any other exception - something happened, exit
             print('Reading error: '.format(str(e)))
             sys.exit()
+        
+        sleep(0.2)
 
 # Start the thread to receive messages
 threading.Thread(target=receive_messages).start()
