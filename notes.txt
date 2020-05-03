@@ -1,0 +1,26 @@
+Server
+    Socket setup and creation is currently handled
+    server listens for messages on socket then receives them as objects:
+        'header': [header],
+        'data': [data]
+    
+    Core loop:
+        Read all sockets into read_sockets and exception_sockets
+
+        for each read_socket that is a notified_socket
+            if it's a server socket (a new connection)
+                accept it and add it to the client list
+            if it's not (meaning it's a message from an existing connection)
+                process the message using receive_message
+                if the message is false
+                    close the connection gracefully
+                    drop the client from the client list
+                else (if the message is anything other than disconnect)
+                    get the client id by checking the client list for the socket
+                    iterate over all clients
+                        if the client isn't the sender, send them the message
+                        and the sender
+
+Current bugs: This works, but doesn't push to the client. That is, the client 
+has to send a message to get a message from the server. How do we make it
+live update
