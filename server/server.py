@@ -29,6 +29,7 @@ sockets_list = [server_socket]
 
 # List of connected clients - socket as a key, user header and name as data
 clients = {}
+users = []
 
 print(f'Listening for connections on {IP}:{PORT}...')
 
@@ -88,28 +89,28 @@ while True:
             clientID = receive_message(client_socket)
             print('received header', clientID)
 
-            # NEW ENCRYPTION/ AUTHENTICATION CODE STARTS, DELETE IF PROBLEMS ARE CAUSED
-            client_key = clientID[0:2]
+            # # NEW ENCRYPTION/ AUTHENTICATION CODE STARTS, DELETE IF PROBLEMS ARE CAUSED
+            # client_key = clientID[0:2]
 
-            # Authentication (must receive a HELLO from valid USER)
-            # verify client in list
-            user_accepted = False
+            # # Authentication (must receive a HELLO from valid USER)
+            # # verify client in list
+            # user_accepted = False
 
-            while not user_accepted:
-                userIDfile = open("userlist.txt", "r").readlines()
-                for line in userIDfile:
-                    user_accepted = (line == clientID) or user_accepted
-                if user_accepted:
-                    client_socket.send("CHALLENGE, sending rand int")
-                    random_int = randrange(999)
-                else:
-                    client_socket.send("AUTH_FAIL, closing connection")
-                    client_socket.close();
+            # while not user_accepted:
+            #     userIDfile = open("userlist.txt", "r").readlines()
+            #     for line in userIDfile:
+            #         user_accepted = (line == clientID) or user_accepted
+            #     if user_accepted:
+            #         client_socket.send("CHALLENGE, sending rand int")
+            #         random_int = randrange(999)
+            #     else:
+            #         client_socket.send("AUTH_FAIL, closing connection")
+            #         client_socket.close();
 
-            # Encryption Algo
-            CK_A = hash(random_int + client_key)
-            client_socket.send("AUTH_SUCCESS")
-            # END OF NEW ENCRYPTION. AUTHENTICATION CODE
+            # # Encryption Algo
+            # CK_A = hash(random_int + client_key)
+            # client_socket.send("AUTH_SUCCESS")
+            # # END OF NEW ENCRYPTION. AUTHENTICATION CODE
 
             # If False - client disconnected before he sent his name
             if clientID is False:
@@ -119,9 +120,9 @@ while True:
             sockets_list.append(client_socket)
 
             # Also save clientID and clientID header
-            clients[client_socket] = {'clientID':clientID, 
-                                      'status':'waiting',
-                                      'chattingWith':''}
+            clients[client_socket] = clientID
+            users.append({'clientID':clientID["data"].decode("utf-8"), 'status':'waiting',
+                          'chattingWith':'', 'socket':client_socket})
 
             print('Accepted new connection from {}:{}, clientID: {}'.format(*client_address, clientID['data'].decode('utf-8')))
 
@@ -133,7 +134,7 @@ while True:
 
             # If False, client disconnected, cleanup
             if message is False:
-                print('Closed connection from: {}'.format(clients[notified_socket]['data'].decode('utf-8')))
+                print('Closed connection from: {}'.format(clients[notified_socket].decode('utf-8')))
 
                 # Remove from list for socket.socket()
                 sockets_list.remove(notified_socket)
@@ -144,7 +145,7 @@ while True:
                 continue
 
             # Get clientID by notified socket, so we will know who sent the message
-            clientID = clients[notified_socket]['clientID']
+            clientID = clients[notified_socket]
 
             print(f'Received message from {clientID["data"].decode("utf-8")}: {message["data"].decode("utf-8")}')
 
@@ -154,29 +155,53 @@ while True:
             # the message string is just message, the user state is 
             # clients[notified_socket]['status']
 
-            userStatus = clients[notified_socket]['status']
-
+            thisClientID = clientID["data"].decode("utf-8")
+            print("thisclientid: ", thisClientID)
+            userStatus = ''
+            for user in users:
+                if user['clientID'] == thisClientID:
+                    userStatus = user['status']
+            
+            print("userstatus: ", userStatus)
+            
+            messageBody = message["data"].decode("utf-8")
+            
             # assume that if chat is in the message then it's a request to start
             # a chat
-            messageBody = message["data"].decode("utf-8")
             if "Chat" in messageBody and userStatus == 'waiting':
                 # need to pull the user id
                 targetID = messageBody.split()[1]
-                print('targetid type: ', type(targetID))
-                # print("received chat start with targetid ", targetID)
-                for client in clients:
-                    print(client.__getattribute__("clientID"))
-                    # if clients[client]['clientID'] == targetID:
-                    #     print('chained')
-                    # print(client.__dict__.keys())
-                    # if client.'userID' == targetID:
-                    #     print('okay it kinda worked')
-                    
+                
+                for secondUser in users:
+                    if secondUser['clientID'] == targetID:
+                        secondUserStatus = secondUser['status']
+                        secondUserClientID = secondUser['clientID']
+
+                        #if they're both waiting
+                        if secondUserStatus == 'waiting':
+                            print("Started chat between", thisClientID, "and", secondUserClientID)
+                            # send a message to both saying that they're now
+                            # chatting with the other
+
+                            message = "now chatting".encode('utf-8')
+                            message_header = f"{len(message):<{HEADER_LENGTH}}".encode('utf-8')
+                            systemID = "System".encode("utf-8")
+                            systemIDHeader = f"{len(systemID):<{HEADER_LENGTH}}".encode('utf-8')
+                            
+                            user['socket'].send(systemIDHeader + "System".encode("utf-8") + message_header + message)
+                            secondUser['socket'].send(systemIDHeader + "System".encode("utf-8") + message_header + message)
+
+                            # set their statuses to chatting: <user>
+                            user['status'] = "chatting: " + secondUserClientID
+                            secondUser['status'] = "chatting: " + thisClientID
+
+
+                
                 # else = the user is offline or otherwise unavailable
-                else:
-                    print('do this later 139')
-                    # we need to send a message to the client that requested
-                    # the chat saying that the invitation failed
+            else:
+                print('do this later 139')
+                # we need to send a message to the client that requested
+                # the chat saying that the invitation failed
 
             # Iterate over connected clients and broadcast message
             # for client_socket in clients:
