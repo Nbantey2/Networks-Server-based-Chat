@@ -1,5 +1,6 @@
 import socket
 import select
+from random import randrange
 
 HEADER_LENGTH = 10
 
@@ -86,6 +87,30 @@ while True:
             # Client should send his name right away, receive it
             clientID = receive_message(client_socket)
             print('received header', clientID)
+
+            # NEW ENCRYPTION/ AUTHENTICATION CODE STARTS, DELETE IF PROBLEMS ARE CAUSED
+            client_key = clientID[0:2]
+
+            # Authentication (must receive a HELLO from valid USER)
+            # verify client in list
+            user_accepted = False
+
+            while not user_accepted:
+                userIDfile = open("userlist.txt", "r").readlines()
+                for line in userIDfile:
+                    user_accepted = (line == clientID) or user_accepted
+                if user_accepted:
+                    client_socket.send("CHALLENGE, sending rand int")
+                    random_int = randrange(999)
+                else:
+                    client_socket.send("AUTH_FAIL, closing connection")
+                    client_socket.close();
+
+            # Encryption Algo
+            CK_A = hash(random_int + client_key)
+            client_socket.send("AUTH_SUCCESS")
+            # END OF NEW ENCRYPTION. AUTHENTICATION CODE
+
             # If False - client disconnected before he sent his name
             if clientID is False:
                 continue
