@@ -161,6 +161,7 @@ while True:
             for user in users:
                 if user['clientID'] == thisClientID:
                     userStatus = user['status']
+                    sender = user
             
             print("userstatus: ", userStatus)
             
@@ -188,13 +189,20 @@ while True:
                             systemID = "System".encode("utf-8")
                             systemIDHeader = f"{len(systemID):<{HEADER_LENGTH}}".encode('utf-8')
                             
-                            user['socket'].send(systemIDHeader + "System".encode("utf-8") + message_header + message)
+                            sender['socket'].send(systemIDHeader + "System".encode("utf-8") + message_header + message)
                             secondUser['socket'].send(systemIDHeader + "System".encode("utf-8") + message_header + message)
 
                             # set their statuses to chatting: <user>
-                            user['status'] = "chatting: " + secondUserClientID
-                            secondUser['status'] = "chatting: " + thisClientID
+                            sender['status'] = "Chatting: " + secondUserClientID
+                            secondUser['status'] = "Chatting: " + thisClientID
 
+            if "Chatting:" in userStatus:
+                targetID = userStatus.split()[1]
+                senderHeader =  f"{len(thisClientID):<{HEADER_LENGTH}}".encode('utf-8')
+
+                for target in users:
+                    if target['clientID'] == targetID:
+                        target['socket'].send(senderHeader + thisClientID.encode("utf-8") + message['header'] + message['data'])
 
                 
                 # else = the user is offline or otherwise unavailable
