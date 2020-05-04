@@ -47,6 +47,7 @@ def receive_message(client_socket):
         message_length = int(message_header.decode('utf-8').strip())
 
         # Return an object of message header and message data
+        print('received message header ', message_header)
         return {'header': message_header, 'data': client_socket.recv(message_length)}
 
     except:
@@ -84,7 +85,7 @@ while True:
 
             # Client should send his name right away, receive it
             clientID = receive_message(client_socket)
-
+            print('received header', clientID)
             # If False - client disconnected before he sent his name
             if clientID is False:
                 continue
@@ -93,7 +94,9 @@ while True:
             sockets_list.append(client_socket)
 
             # Also save clientID and clientID header
-            clients[client_socket] = clientID
+            clients[client_socket] = {'clientID':clientID, 
+                                      'status':'waiting',
+                                      'chattingWith':''}
 
             print('Accepted new connection from {}:{}, clientID: {}'.format(*client_address, clientID['data'].decode('utf-8')))
 
@@ -116,19 +119,49 @@ while True:
                 continue
 
             # Get clientID by notified socket, so we will know who sent the message
-            clientID = clients[notified_socket]
+            clientID = clients[notified_socket]['clientID']
 
             print(f'Received message from {clientID["data"].decode("utf-8")}: {message["data"].decode("utf-8")}')
 
+            # Okay, so at this point we have the server getting the message
+            # that the user sends. Now we need to change what it does based on
+            # that message and the user state
+            # the message string is just message, the user state is 
+            # clients[notified_socket]['status']
+
+            userStatus = clients[notified_socket]['status']
+
+            # assume that if chat is in the message then it's a request to start
+            # a chat
+            messageBody = message["data"].decode("utf-8")
+            if "Chat" in messageBody and userStatus == 'waiting':
+                # need to pull the user id
+                targetID = messageBody.split()[1]
+                print('targetid type: ', type(targetID))
+                # print("received chat start with targetid ", targetID)
+                for client in clients:
+                    print(client.__getattribute__("clientID"))
+                    # if clients[client]['clientID'] == targetID:
+                    #     print('chained')
+                    # print(client.__dict__.keys())
+                    # if client.'userID' == targetID:
+                    #     print('okay it kinda worked')
+                    
+                # else = the user is offline or otherwise unavailable
+                else:
+                    print('do this later 139')
+                    # we need to send a message to the client that requested
+                    # the chat saying that the invitation failed
+
             # Iterate over connected clients and broadcast message
-            for client_socket in clients:
+            # for client_socket in clients:
 
-                # But don't sent it to sender
-                if client_socket != notified_socket:
+            #     # But don't sent it to sender
+            #     if client_socket != notified_socket:
 
-                    # Send clientID and message (both with their headers)
-                    # We are reusing here message header sent by sender, and saved clientID header send by clientID when he connected
-                    client_socket.send(clientID['header'] + clientID['data'] + message['header'] + message['data'])
+            #         # Send clientID and message (both with their headers)
+            #         # We are reusing here message header sent by sender, and saved clientID header send by clientID when he connected
+            #         client_socket.send(clientID['header'] + clientID['data'] + message['header'] + message['data'])
 
     # It's not really necessary to have this, but will handle some socket exceptions just in case
     for notified_socket in exception_sockets:
